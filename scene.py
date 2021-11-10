@@ -35,18 +35,23 @@ class Scene:
         elif obj_id in self.lights:
             return self.lights[obj_id]
 
-    def _nearest_intersected_object(self, ray: Ray) -> Tuple[SceneObject, float]:
+    def _nearest_intersected_object(self, ray: Ray) -> Tuple[SceneObject, float, Ray]:
         sceneObjects = list(self.sceneObjects.values())
 
-        distances = [obj.intersectionDist(ray) for obj in sceneObjects]
+        intersections = np.array([obj.getIntersection(ray) for obj in sceneObjects])
+        distances = intersections[:, 0]
+        normals = intersections[:, 1]
+
         nearest_object = None
+        normal = None
         min_distance = np.inf
         for index, distance in enumerate(distances):
             if distance and distance < min_distance:
                 min_distance = distance
                 nearest_object = sceneObjects[index]
+                normal = normals[index]
 
-        return nearest_object, min_distance
+        return nearest_object, min_distance, normal
 
     def render(self, width: int, height: int, max_depth=5) -> np.ndarray:
         camera = Point(0, 0, 1)
@@ -64,7 +69,7 @@ class Scene:
 
                 for k in range(0, max_depth):
                     # object intersection
-                    nearest_object, min_distance = self._nearest_intersected_object(ray)
+                    nearest_object, min_distance, normal = self._nearest_intersected_object(ray)
                     if nearest_object is None:
                         break
 
@@ -74,11 +79,10 @@ class Scene:
                     light = self.lights[0]  # TODO multiple lights
                     light_pos = light.pos
 
-                    normal = nearest_object.getNormal(intersection)
                     shifted_point = normal.pointAt(1e-5)
                     light_ray = Ray(*shifted_point.coords, *(light_pos.coords - shifted_point.coords)).normalize()
 
-                    _, min_distance = self._nearest_intersected_object(light_ray)
+                    _, min_distance, _ = self._nearest_intersected_object(light_ray)
                     light_distance = np.linalg.norm(light_pos.coords - intersection.coords)
 
                     is_shadowed = min_distance < light_distance

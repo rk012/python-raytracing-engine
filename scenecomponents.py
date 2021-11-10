@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Union, Tuple
 
 import numpy as np
 
@@ -66,11 +66,7 @@ class SceneObject(SceneComponent, ABC):
         return self._m
 
     @abstractmethod
-    def intersectionDist(self, ray: Ray) -> Union[float, None]:
-        pass
-
-    @abstractmethod
-    def getNormal(self, p: Point) -> Ray:
+    def getIntersection(self, ray: Ray) -> Tuple[Union[float, None], Union[Ray, None]]:
         pass
 
 
@@ -81,7 +77,7 @@ class Sphere(SceneObject):
         self.c = center
         self.r = radius
 
-    def intersectionDist(self, ray: Ray) -> Union[float, None]:
+    def getIntersection(self, ray: Ray) -> Tuple[Union[float, None], Union[Ray, None]]:
         b = 2 * np.dot(ray.vector, ray.origin.coords - self.c.coords)
         c = np.linalg.norm(ray.origin.coords - self.c.coords) ** 2 - self.r ** 2
         delta = b ** 2 - 4 * c
@@ -89,8 +85,7 @@ class Sphere(SceneObject):
             t1 = (-b + np.sqrt(delta)) / 2
             t2 = (-b - np.sqrt(delta)) / 2
             if t1 > 0 and t2 > 0:
-                return min(t1, t2)
-        return None
-
-    def getNormal(self, p: Point) -> Ray:
-        return Ray(*p.coords, *(p.coords - self.c.coords)).normalize()
+                t = min(t1, t2)
+                p = ray.pointAt(t)
+                return min(t1, t2), Ray(*p.coords, *(p.coords - self.c.coords)).normalize()
+        return None, None
