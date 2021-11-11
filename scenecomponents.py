@@ -25,7 +25,7 @@ class Ray:
         return Ray(*self.origin.coords, *norm_vector)
 
     def pointAt(self, t: float) -> Point:
-        return Point(*(t*self.vector + self.origin.coords))
+        return Point(*(t * self.vector + self.origin.coords))
 
 
 class Color:
@@ -51,8 +51,10 @@ class SceneComponent:
 
 
 class Light(SceneComponent):
-    def __init__(self, pos: Point, ambient: Color=Color(1, 1, 1), diffuse: Color=Color(1, 1, 1), specular: Color=Color(1, 1, 1)):
+    def __init__(self, pos: Point, intensity: float, ambient: Color = Color(1, 1, 1), diffuse: Color = Color(1, 1, 1),
+                 specular: Color = Color(1, 1, 1)):
         self.pos = pos
+        self.intensity = intensity
         self.ambient = ambient
         self.diffuse = diffuse
         self.specular = specular

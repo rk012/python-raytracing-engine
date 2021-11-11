@@ -73,35 +73,44 @@ class Scene:
                     if nearest_object is None:
                         break
 
+                    max_illumination = np.zeros((3))  # nearest_object.getMaterial().ambient.arr
+
                     intersection = ray.pointAt(min_distance)
 
+                    hasLight = False
+
                     # light intersection
-                    light = self.lights[0]  # TODO multiple lights
-                    light_pos = light.pos
+                    for light in self.lights.values():
+                        light_pos = light.pos
 
-                    shifted_point = normal.pointAt(1e-5)
-                    light_ray = Ray(*shifted_point.coords, *(light_pos.coords - shifted_point.coords)).normalize()
+                        shifted_point = normal.pointAt(1e-5)
+                        light_ray = Ray(*shifted_point.coords, *(light_pos.coords - shifted_point.coords)).normalize()
 
-                    _, min_distance, _ = self._nearest_intersected_object(light_ray)
-                    light_distance = np.linalg.norm(light_pos.coords - intersection.coords)
+                        _, min_distance, _ = self._nearest_intersected_object(light_ray)
+                        light_distance = np.linalg.norm(light_pos.coords - intersection.coords)
 
-                    is_shadowed = min_distance < light_distance
+                        is_shadowed = min_distance < light_distance
 
-                    if is_shadowed:
-                        color += reflection * nearest_object.getMaterial().ambient.arr
-                        break
+                        if is_shadowed:
+                            continue
 
-                    illumination = np.zeros((3))
-                    illumination += nearest_object.getMaterial().ambient.arr * light.ambient.arr
-                    illumination += nearest_object.getMaterial().diffuse.arr * light.diffuse.arr * np.dot(light_ray.vector,
-                                                                                                          normal.vector)
+                        hasLight = True
 
-                    intersection_to_camera = Ray(*shifted_point.coords, *(-1*ray.vector)).normalize()
-                    H = (light_ray.vector + intersection_to_camera.vector)/np.linalg.norm(light_ray.vector + intersection_to_camera.vector)
-                    illumination += nearest_object.getMaterial().specular.arr * light.specular.arr * np.dot(normal.vector, H) ** (nearest_object.getMaterial().specularity / 4)
+                        illumination = np.zeros((3))
+                        illumination += nearest_object.getMaterial().ambient.arr * light.ambient.arr
+                        illumination += nearest_object.getMaterial().diffuse.arr * light.diffuse.arr * np.dot(light_ray.vector, normal.vector) * light.intensity / light_distance**2
+
+                        intersection_to_camera = Ray(*shifted_point.coords, *(-1*ray.vector)).normalize()
+                        H = (light_ray.vector + intersection_to_camera.vector)/np.linalg.norm(light_ray.vector + intersection_to_camera.vector)
+                        illumination += (nearest_object.getMaterial().specular.arr * light.specular.arr * np.dot(normal.vector, H) ** (nearest_object.getMaterial().specularity / 4)) * light.intensity / light_distance**2
+
+                        max_illumination[illumination>max_illumination] = illumination[illumination>max_illumination]
+
+                    if not hasLight:
+                        max_illumination = nearest_object.getMaterial().ambient.arr
 
                     # Reflection
-                    color += reflection * illumination
+                    color += reflection * max_illumination
                     reflection *= nearest_object.getMaterial().reflection
 
                     # new ray

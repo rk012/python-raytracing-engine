@@ -9,7 +9,7 @@ r = Material(
     diffuse=Color(1, 0, 0),
     ambient=Color(0.2, 0, 0),
     specular=Color(1, 1, 1),
-    specularity=100,
+    specularity=200,
     reflection=0.5
 )
 
@@ -25,12 +25,18 @@ b = Material(
     diffuse=Color(0, 0, 1),
     ambient=Color(0, 0, 0.2),
     specular=Color(1, 1, 1),
-    specularity=100,
+    specularity=50,
     reflection=0.5
 )
 
 scene.addComponent(Light(
-    Point(5, 5, 5)
+    pos=Point(5, 5, 5),
+    intensity=50
+))
+
+scene.addComponent(Light(
+    pos=Point(-5, 2, 0),
+    intensity=30
 ))
 
 scene.addComponent(Sphere(
