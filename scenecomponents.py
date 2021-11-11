@@ -37,6 +37,61 @@ class Color:
         self.arr = np.array([r, g, b])
 
 
+class Transform:
+    def __init__(self, x: float, y: float, z: float, yaw: float, pitch: float, roll: float, sx: float, sy: float, sz: float):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.yaw = yaw
+        self.pitch = pitch
+        self.roll = roll
+        self.sx = sx
+        self.sy = sy
+        self.sz = sz
+
+        self.pos = np.array([x, y, z])
+        self.rotation = np.array([yaw, pitch, roll])
+        self.scale = np.array([sx, sy, sz])
+
+        self.matrix = np.dot(np.diag(self.scale), np.dot(np.dot(np.array(
+            [[np.cos(yaw), 0, np.sin(yaw)],
+             [0, 1, 0],
+             [-np.sin(yaw), 0, np.cos(yaw)]]
+        )
+                             , np.array(
+                [[1, 0, 0],
+                 [0, np.cos(pitch), np.sin(pitch)],
+                 [0, -np.sin(pitch), np.cos(pitch)]]
+            ))
+                             , np.array(
+                [[np.cos(roll), -np.sin(roll), 0],
+                 [np.sin(roll), np.cos(roll), 0],
+                 [0, 0, 1]]
+            )
+                             ))
+        self.inv_matrix = np.linalg.inv(self.matrix)
+
+    def applyTransform(self, p: Union[Point, Ray]) -> Union[Point, Ray]:
+        if isinstance(p, Point):
+            t = np.dot(self.matrix, p.coords) + self.pos
+            return Point(*t)
+
+        else:
+            t = np.dot(self.matrix, p.origin.coords) + self.pos
+            v = np.dot(self.matrix, p.origin.coords)
+            return Ray(*t, *v)
+
+    def undoTransform(self, p: Union[Point, Ray]) -> Union[Point, Ray]:
+        if isinstance(p, Point):
+            t = np.dot(self.inv_matrix, p.coords - self.pos)
+            return Point(*t)
+
+        else:
+            t = np.dot(self.inv_matrix, p.origin.coords - self.pos)
+            v = np.dot(self.inv_matrix, p.origin.coords)
+            return Ray(*t, *v)
+
+
 class Material:
     def __init__(self, ambient: Color, diffuse: Color, specular: Color, specularity: float, reflection: float):
         self.ambient = ambient
